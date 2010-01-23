@@ -171,10 +171,8 @@ class Processor:
 				'syntax error in $#arenadata: expected: "static" or "dynamic" or nothing as the only parameter')
 
 		if type == 'static' or (not type and not module.per_arena_data):
-			print 'static'
 			module.setupArenaData(dynamic=False)
 		elif type == 'dynamic':
-			print 'dynamic'
 			module.setupArenaData(dynamic=True)
 		processor.active_structure = module.per_arena_data
 		return 'endarenadata' # return the expected follow up directive
