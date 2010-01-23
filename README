@@ -1,0 +1,7 @@
+To use ACE with your ASSS makefile, copy all files to src/ace/ in your ASSS build environment.
+Running make in src/ will then process all .aces files into .c files and then into the appropriate .o file.
+
+To use ACE manually, run "python ace.py --help" for more information.
+
+Report or follow issues on ACE's bitbucket bug tracker: <http://bitbucket.org/akd/ace/issues/?status=new&status=open>
+
