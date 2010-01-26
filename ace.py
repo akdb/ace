@@ -2145,7 +2145,7 @@ try:
 	my_module.writeOut()
 	sys.exit(0)
 
-except ProcessingException as e:
+except ProcessingException, e:
 	sys.stderr.write(e.message())
 	sys.stderr.write('\n')
 	sys.exit(1)
