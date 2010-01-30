@@ -2122,19 +2122,22 @@ parser.add_option("-l", "--line-directives",
 
 if len(in_files) == 0:
 	sys.stderr.write('error: no input file\n')	
-	sys.exit(255)
+	sys.exit(64)
 elif len(in_files) > 1:
 	sys.stderr.write('error: more than one input file specified\n')
-	sys.exit(255)
+	sys.exit(64)
 
 in_file = in_files[0]
 
 my_module = ACEModule()
-my_processor = Processor(in_file, my_module)
-my_module.source_file = in_file
+try:
+	my_processor = Processor(in_file, my_module)
+except IOError, e:
+	(errno, message) = e
+	sys.stderr.write('%s: error: unable to read file: %s\n' % (in_file, message))
+	sys.exit(32)
 
-if options.output_file:
-	sys.stdout = open(options.output_file, 'w')
+my_module.source_file = in_file
 
 if options.use_line_directives:
 	my_processor.use_line_directives = True
@@ -2142,6 +2145,13 @@ if options.use_line_directives:
 	
 try:
 	my_processor.process()
+	if options.output_file:
+		try:
+			sys.stdout = open(options.output_file, 'w')
+		except IOError, e:
+			(errno, message) = e
+			sys.stderr.write('%s: error: unable to write file: %s\n' % (options.output_file, message))
+			sys.exit(16)
 	my_module.writeOut()
 	sys.exit(0)
 
@@ -2149,3 +2159,4 @@ except ProcessingException, e:
 	sys.stderr.write(e.message())
 	sys.stderr.write('\n')
 	sys.exit(1)
+
