@@ -217,6 +217,7 @@ class Processor:
 			processor.active_extrablock = module.extra_attachlast_code
 		else:
 			processor.active_extrablock = module.extra_attachfirst_code
+		processor.active_extrablock.write('\t\t/* extra-attach block */ {\n')
 		module.force_attach = True
 		return 'endattach' # return the expected follow up directive
 		
@@ -233,6 +234,7 @@ class Processor:
 		if not noParams:
 			raise ProcessingException(processor,
 				'syntax error: unexpected paramaters in $#endattach')
+		processor.active_extrablock.write('\t\t}\n')
 		processor.active_extrablock = None
 		return None
 	
@@ -369,6 +371,7 @@ class Processor:
 			processor.active_extrablock = module.extra_detachfirst_code
 		else:
 			processor.active_extrablock = module.extra_detachlast_code
+		processor.active_extrablock.write('\t\t/* extra-detach block */ {\n')
 		module.force_attach = True
 		return 'enddetach' # return the expected follow up directive
 
@@ -386,6 +389,7 @@ class Processor:
 		if not noParams:
 			raise ProcessingException(processor,
 				'syntax error: unexpected paramaters in $#enddetach')
+		processor.active_extrablock.write('\t\t}\n')
 		processor.active_extrablock = None
 		return None
 	
@@ -523,6 +527,7 @@ class Processor:
 			processor.active_extrablock = module.extra_loadlast_code
 		else:
 			processor.active_extrablock = module.extra_loadfirst_code
+		processor.active_extrablock.write('\t\t/* extra-load block */ {\n')
 		return 'endload' # return the expected follow up directive
 	
 	
@@ -538,6 +543,7 @@ class Processor:
 		if not noParams:
 			raise ProcessingException(processor,
 				'syntax error: unexpected paramaters in $#endload')
+		processor.active_extrablock.write('\t\t}\n')
 		processor.active_extrablock = None
 		return None
 
@@ -723,6 +729,7 @@ class Processor:
 			processor.active_extrablock = module.extra_unloadfirst_code
 		else:
 			processor.active_extrablock = module.extra_unloadlast_code
+		processor.active_extrablock.write('\t\t/* extra-unload block */ {\n')
 		return 'endunload' # return the expected follow up directive
 
 
@@ -739,6 +746,7 @@ class Processor:
 		if not noParams:
 			raise ProcessingException(processor,
 				'syntax error: unexpected paramaters in $#endunload')
+		processor.active_extrablock.write('\t\t}\n')
 		processor.active_extrablock = None
 		return None
 
@@ -1088,7 +1096,7 @@ class Processor:
 				if not initialWhitespace:
 					initialWhitespace = ''
 				if self.active_extrablock:
-					initialWhitespace = '\t' + initialWhitespace
+					initialWhitespace = '\t\t' + initialWhitespace
 				inlineName = inline.group(2)
 				inlineParams = inline.group(3)
 				extraJunk = inline.group(4)
@@ -1199,7 +1207,7 @@ class Processor:
 				continue
 					
 			if self.active_extrablock and not used_inline:
-				line = '\t' + line
+				line = '\t\t' + line
 
 			line = self.addLineDirectives(line)
 			self.needs_line_directive = False
