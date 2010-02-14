@@ -1148,16 +1148,21 @@ class Processor:
 				line = self.addLineDirectives(line)
 				buffer.write(line)
 				self.needs_line_directive = False
-				function_definition = ACEFunction.FunctionCompleteEx.search(buffer.getvalue())
-				if function_definition:
-					newFn = ACEFunction(function_definition.group(1), function_definition.group(2), function_definition.group(3), function_definition.group(4))
-					if self.use_line_directives:
-						newFn.file = self.filename
-						newFn.line_number = function_start
-					self.registerFunction(newFn)
-					self.function_mode = False
-					buffer.truncate(0)
-					self.needs_line_directive = True
+				function_end = ACEFunction.FunctionEndEx.match(line)
+				if function_end:
+					function_definition = ACEFunction.FunctionCompleteEx.search(buffer.getvalue())
+					if function_definition:
+						newFn = ACEFunction(function_definition.group(1), function_definition.group(2), function_definition.group(3), function_definition.group(4))
+						if self.use_line_directives:
+							newFn.file = self.filename
+							newFn.line_number = function_start
+						self.registerFunction(newFn)
+						self.function_mode = False
+						buffer.truncate(0)
+						self.needs_line_directive = True
+					else:
+						raise ProcessingException(self,
+							'syntax error in function definition. check to make sure your function is declared properly')
 				continue
 				
 			if self.current_line == 1:
@@ -1912,6 +1917,7 @@ class ACEDependency:
 
 class ACEFunction:
 	FunctionDeclareEx = re.compile(r'\s*l?o?c?a?l?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)')
+	FunctionEndEx = re.compile(r'^}$')
 	FunctionCompleteEx = re.compile(r'\s*l?o?c?a?l?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)\s*{(.*)^}', re.DOTALL | re.MULTILINE)
 	def __init__(self, declaration, name, params, body):
 		self.name = name
