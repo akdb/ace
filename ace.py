@@ -711,7 +711,7 @@ class Processor:
 #$failload() directive.
 
 ##
-	UnloadParamEx = re.compile(r'^ (\w+)?$')
+	UnloadParamEx = re.compile(r'^[ ]?(\w+)?$')
 	def handleUnload(processor, module, params):
 		paramMatch = Processor.UnloadParamEx.match(params)
 		if not paramMatch:
