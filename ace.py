@@ -1160,7 +1160,7 @@ class Processor:
 				if function_end:
 					function_definition = ACEFunction.FunctionCompleteEx.search(buffer.getvalue())
 					if function_definition:
-						newFn = ACEFunction(function_definition.group(1), function_definition.group(2), function_definition.group(3), function_definition.group(4))
+						newFn = ACEFunction(function_definition.group(2), function_definition.group(3), function_definition.group(4), function_definition.group(5))
 						if self.use_line_directives:
 							newFn.file = self.filename
 							newFn.line_number = function_start
@@ -1924,9 +1924,9 @@ class ACEDependency:
 		
 
 class ACEFunction:
-	FunctionDeclareEx = re.compile(r'\s*l?o?c?a?l?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)')
+	FunctionDeclareEx = re.compile(r'\s*(local)?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)')
 	FunctionEndEx = re.compile(r'^}$')
-	FunctionCompleteEx = re.compile(r'\s*l?o?c?a?l?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)\s*{(.*)^}', re.DOTALL | re.MULTILINE)
+	FunctionCompleteEx = re.compile(r'\s*(local)?\s*([A-Za-z0-9_* ]+?)\s*?(\w+?)\((.*?)\)\s*{(.*)^}', re.DOTALL | re.MULTILINE)
 	def __init__(self, declaration, name, params, body):
 		self.name = name
 		self.declaration = declaration
