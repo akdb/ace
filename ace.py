@@ -1176,7 +1176,7 @@ class Processor:
 			if self.current_line == 1:
 				raise ProcessingException(self, '$#module not on first line')
 
-			if not self.active_extrablock:
+			if not self.active_extrablock and not self.active_structure:
 				function_part = ACEFunction.FunctionDeclareEx.match(line)
 				if function_part:
 					# we are capturing a function, when we get the complete function
@@ -1187,8 +1187,39 @@ class Processor:
 					buffer.write(line)
 					self.needs_line_directive = False
 					continue
+					
+				struct_begin = ACEStructure.StructDeclareEx.match(line)
+				if struct_begin:
+					self.active_structure = ACEStructure(self.module, struct_begin.group(2))
+					if self.use_line_directives:
+						self.active_structure.line_number = self.current_line
+						self.active_structure.file = self.filename
+					continue
+					
+				typedef_declare = ACEStructure.TypedefDeclareEx.match(line)
+				if typedef_declare:
+					if self.use_line_directives:
+						self.module.typedefs.append((self.filename, self.current_line, typedef_declare.group(1)))
+					else:
+						self.module.typedefs.append((None, None, typedef_declare.group(1)))
+					continue
 
 			if self.active_structure:
+				if self.active_structure.closeviaregex:
+					ignore_line = ACEStructure.StructDeclareExtraEx.match(line)
+					if ignore_line:
+						continue
+						
+					end_struct = ACEStructure.StructEndEx.match(line)
+					if end_struct:
+						if end_struct.group(1):
+							if self.active_structure.name and self.active_structure.name != end_struct.group(1):
+								raise ProcessingException(self, 'struct name inconsistency, check to make sure the struct is named as you want it')
+							self.active_structure.name = end_struct.group(1)
+						self.module.structs.append(self.active_structure)
+						self.active_structure = False
+						continue
+
 				itemSpecified = Processor.StructFieldEx.match(line)
 				if itemSpecified:
 					self.active_structure.pushItem(self.filename, self.current_line, itemSpecified.group(1))
@@ -1299,6 +1330,7 @@ class ACEModule:
 		self.includes = {}
 		self.defines = {}
 		self.typedefs = []
+		self.structs = []
 		self.functions = []
 		
 		self.global_dependencies = {'lm': ACEDependency(self, 'Ilogman', 'lm',
@@ -1468,14 +1500,23 @@ class ACEModule:
 	def writeOut(self):
 		print '#include "asss.h"'
 		
+		print
+
 		for value in self.includes.values():
 			print '#include', value
 		
 		for key, value in self.defines.iteritems():
 			print '#define', key, value
-		for fulltype, alias in self.typedefs:
-			print 'typedef', fulltype, alias + ';'
+		
+		for file, line, typedef in self.typedefs:
+			if file and line:
+				print '#line %i "%s"' % (line, file)
+			print 'typedef', typedef + ';'
 			
+		for struct in self.structs:
+			struct.printDeclareCode()
+			print
+
 		print
 		
 		print 'local Imodman *mm;'
@@ -1993,16 +2034,26 @@ class ACEInterface:
 
 			
 class ACEStructure:
-	def ___init__(self, module, name, dynamic=False):
+	TypedefDeclareEx = re.compile(r'typedef\s*(.*)\s*;$')
+	StructDeclareEx = re.compile(r'(typedef)?\s*struct\s*(\w+)')
+	StructDeclareExtraEx = re.compile(r'^\s*{\s*$')
+	StructEndEx = re.compile(r'^}\s*(\w+)?;\s*$')
+
+	def __init__(self, module, name, dynamic=False):
 		self.module = module
 		self.dynamic = dynamic
 		self.name = name
 		self.items = []
+		self.closeviaregex = True
+		self.line_number = None
+		self.file = None
 	
 	def pushItem(self, file, line, item):
 		self.items.append((file, line, item))
 		
-	def _printDeclareCode(self):
+	def printDeclareCode(self):
+		if self.line_number and self.file:	
+			print '#line', self.line_number, '"' + self.file + '"'
 		print 'typedef struct', self.name, '\n{'
 		
 		for file, line, item in self.items:
@@ -2020,11 +2071,12 @@ class ACEStructure:
 
 class ACEArenaData(ACEStructure):
 	def __init__(self, module, dynamic=False):
-		self.___init__(module, 'arenadata', dynamic)
+		ACEStructure.__init__(self, module, 'arenadata', dynamic)
+		self.closeviaregex = False
 		
 	def printDeclareCode(self):
 		print 'local int arenaDataKey = -1;'
-		self._printDeclareCode()
+		ACEStructure.printDeclareCode(self)
 
 	def printLoadCode(self):
 		print '\t\t' + 'arenaDataKey = aman->AllocateArenaData(sizeof(' + self.name + '));'
@@ -2068,11 +2120,12 @@ class ACEArenaData(ACEStructure):
 
 class ACEPlayerData(ACEStructure):
 	def __init__(self, module, dynamic=False):
-		self.___init__(module, 'playerdata', dynamic)
+		ACEStructure.__init__(self, module, 'playerdata', dynamic)
+		self.closeviaregex = False
 		
 	def printDeclareCode(self):
 		print 'local int playerDataKey = -1;'
-		self._printDeclareCode()
+		ACEStructure.printDeclareCode(self)
 
 	def printLoadCode(self):
 		print '\t\t' + 'playerDataKey = pd->AllocatePlayerData(sizeof(' + self.name + '));'
