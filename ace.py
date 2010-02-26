@@ -35,7 +35,6 @@ class Processor:
 	InlineEx = re.compile(r'^(\s*)\$(\w+)\((.*)\)[;]?(.*)\s*$')
 	
 	InterfaceUsageEx = re.compile(r'(\w+)->\w+?\(')
-	StructFieldEx = re.compile(r'\s*(.+);')
 	StringEx = re.compile(r'\s*(".*")\s*')
 	
 	CPreprocessorEx = re.compile(r'^#(include|define) ([^ ]+)[ ]?(.+)?')
@@ -1220,7 +1219,7 @@ class Processor:
 						self.active_structure = False
 						continue
 
-				itemSpecified = Processor.StructFieldEx.match(line)
+				itemSpecified = ACEStructure.StructFieldEx.match(line)
 				if itemSpecified:
 					self.active_structure.pushItem(self.filename, self.current_line, itemSpecified.group(1))
 				continue
@@ -2038,6 +2037,7 @@ class ACEStructure:
 	StructDeclareEx = re.compile(r'(typedef)?\s*struct\s*(\w+)')
 	StructDeclareExtraEx = re.compile(r'^\s*{\s*$')
 	StructEndEx = re.compile(r'^}\s*(\w+)?;\s*$')
+	StructFieldEx = re.compile(r'\s*(.+);')
 
 	def __init__(self, module, name, dynamic=False):
 		self.module = module
