@@ -2079,7 +2079,11 @@ class ACEArenaData(ACEStructure):
 		ACEStructure.printDeclareCode(self)
 
 	def printLoadCode(self):
-		print '\t\t' + 'arenaDataKey = aman->AllocateArenaData(sizeof(' + self.name + '));'
+		if not self.dynamic:
+			print '\t\t' + 'arenaDataKey = aman->AllocateArenaData(sizeof(' + self.name + '));'
+		else:
+			print '\t\t' + 'arenaDataKey = aman->AllocateArenaData(sizeof(wrapper_' + self.name + '));'
+			
 		print '\t\tif (' + 'arenaDataKey == -1)\n\t\t{'
 		print '\t\t\tlm->Log(L_ERROR, "<' + self.module.name + '> unable to register arena-data");'
 		print '\t\t\tfailedLoad = TRUE;'
