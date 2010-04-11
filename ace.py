@@ -1418,6 +1418,7 @@ class ACEModule:
 		else:
 			if dynamic <> None:
 				self.per_arena_data.dynamic = dynamic
+		self.addAutoDependency('aman')
 
 	def setupPlayerData(self, dynamic=False):
 		if not self.per_player_data:
