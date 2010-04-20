@@ -1006,7 +1006,7 @@ class Processor:
 
 ##param: var: the name of the variable to declare
 
-##param: arena: the pointer to the player to point to
+##param: player: the pointer to the player to point to
 
 ##
 	UseplayerdataParamEx = re.compile(r'\s*(.*)\s*,\s*(.*)\s*')
