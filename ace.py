@@ -37,7 +37,7 @@ class Processor:
 	InterfaceUsageEx = re.compile(r'(\w+)->\w+?\(')
 	StringEx = re.compile(r'\s*(".*")\s*')
 	
-	CPreprocessorEx = re.compile(r'^#(include|define) ([^ ]+)[ ]?(.+)?')
+	CPreprocessorEx = re.compile(r'^#(include|define) (\S+)[ ]?(.+)?\s*')
 
 	NoParamEx = re.compile(r'^\s*$')
 	
@@ -1326,7 +1326,7 @@ class ACEModule:
 		self.per_player_data = None
 		self.use_mutex = None
 		
-		self.includes = {}
+		self.includes = {'<stdio.h>': '<stdio.h>'}
 		self.defines = {}
 		self.typedefs = []
 		self.structs = []
@@ -1578,7 +1578,10 @@ class ACEModule:
 			print '\t\tpthread_mutexattr_t attr;'
 		print '\n\t\tmm = _mm;'
 		print '\t\tlm = mm->GetInterface(I_LOGMAN, ALLARENAS);'
-		print '\t\tif (!lm)\n\t\t\treturn MM_FAIL;'
+		print '\t\tif (!lm)\n\t\t{'
+		print '\t\t\tfprintf(stderr, "<' + self.name + '> error obtaining required interface I_LOGMAN " I_LOGMAN);'
+		print '\t\t\treturn MM_FAIL;'
+		print '\t\t}'
 		
 		for key, dep in self.global_dependencies.items():
 			if key == 'lm':
