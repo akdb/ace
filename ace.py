@@ -1425,7 +1425,7 @@ class ACEModule:
 			self.per_player_data = ACEPlayerData(self, dynamic)
 			if dynamic:
 				newfnbody = '\n\tif (action == PA_PREENTERARENA && arena->status <= ARENA_RUNNING)\n\t{\n' + self.per_player_data.getWrapperInvokeCode('pdata', 'p', '\t\t') + '\t\twrapped_pdata->data = amalloc(sizeof(*wrapped_pdata));\n'
-				newfnbody += '\t}\n\telif (action == PA_LEAVEARENA)\n\t{\n' + self.per_player_data.getInvokeCode('pdata', 'p', '\t\t') + '\n\t\twrapped_pdata->data = NULL;\n\t\tafree(pdata);\n\t}\n'
+				newfnbody += '\t}\n\telse if (action == PA_LEAVEARENA)\n\t{\n' + self.per_player_data.getInvokeCode('pdata', 'p', '\t\t') + '\n\t\twrapped_pdata->data = NULL;\n\t\tafree(pdata);\n\t}\n'
 				newfn = ACEFunction('void', 'ace_playeraction', 'Player *p, int action, Arena *arena', newfnbody)
 				newfn.body = newfnbody
 				self.functions.append(newfn)
