@@ -1254,6 +1254,7 @@ class Processor:
 		if self.expected_directive:
 			raise ProcessingException(self,
 				'expected $#' + self.expected_directive + ' before end of file')
+		self.module.last_line_number = self.current_line
 
 
 DirectiveHandlers = {'adviser': Processor.handleAdviser,
@@ -1352,6 +1353,7 @@ class ACEModule:
 		self.my_arena_commands = []
 		
 		self.internal_arena_callbacks = []
+		self.last_line_number = 0
 
 	def writeCode(self, code):
 		self.midcode.write(code)
@@ -1751,6 +1753,8 @@ class ACEModule:
 		print '\treturn MM_FAIL;'
 	
 		print '}\n'
+		if self.use_line_directives:
+			print '#line', str(self.last_line_number), '"' + self.source_file + '"\n'
 			
 class ACEAdviser:
 	def __init__(self, module, type, identifier):
