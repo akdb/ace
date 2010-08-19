@@ -1026,7 +1026,7 @@ class Processor:
 	def __init__(self, filename, module):
 		self.filename = filename
 		self.module = module
-		self.file_handle = open(filename, 'r')
+		self.file_handle = open(filename, 'rU')
 		self.current_line = 0
 		self.expected_directive = 'module'
 		
