@@ -1486,6 +1486,9 @@ class ACEModule:
 		return False
 		
 	def needArenaDataInEntryPoint(self):
+		# we will only put a declaration for an arena data poiner in MM_ATTACH
+		# and MM_DETACH if there is a need for ACE itself to use it. mostly
+		# just to avoid unused var warnings in the C compiler.
 		if self.per_arena_data and self.per_arena_data.dynamic == True:
 			return True
 		if len(self.arena_dependencies) > 0 \
@@ -1567,7 +1570,7 @@ class ACEModule:
 		if self.use_line_directives:
 			print '#line 1 "' + self.source_file + '"'
 
-		print 'EXPORT int MM_' + self.name + '(int action, Imodman *_mm, Arena *arena)\n{'
+		print 'EXPORT int MM_' + self.name + '(int _action, Imodman *_mm, Arena *arena)\n{'
 		
 		# MM_LOAD
 		if self.useFailLoadLabel():
@@ -1575,7 +1578,7 @@ class ACEModule:
 		if self.useFailAttachLabel():
 			print '\tint failedAttach = FALSE;'
 
-		print '\tif (action == MM_LOAD)\n\t{'
+		print '\tif (_action == MM_LOAD)\n\t{'
 		if self.use_mutex:
 			print '\t\tpthread_mutexattr_t attr;'
 		print '\n\t\tmm = _mm;'
@@ -1625,7 +1628,7 @@ class ACEModule:
 		print '\t}'
 		
 		# MM_UNLOAD
-		print '\telse if (action == MM_UNLOAD)\n\t{'
+		print '\telse if (_action == MM_UNLOAD)\n\t{'
 		
 		for int in self.my_global_interfaces:
 			int.printUnloadCode()
@@ -1668,9 +1671,12 @@ class ACEModule:
 		
 		if self.isAttachable():
 			# MM_ATTACH
-			print '\telse if (action == MM_ATTACH)\n\t{'
+			print '\telse if (_action == MM_ATTACH)\n\t{'
 
 			if self.needArenaDataInEntryPoint():
+				# defines arena data pointer _ad but only if we're going to make
+				# and use of it. use of this variable in ACE modules is
+				# unsupported and not recommended.
 				self.per_arena_data.printAttachCode()
 		
 			for key, dep in self.arena_dependencies.items():
@@ -1705,9 +1711,12 @@ class ACEModule:
 			print '\t}'
 		
 			# MM_DETACH
-			print '\telse if (action == MM_DETACH)\n\t{'
+			print '\telse if (_action == MM_DETACH)\n\t{'
 
 			if self.needArenaDataInEntryPoint():
+				# defines arena data pointer _ad but only if we're going to make
+				# and use of it. use of this variable in ACE modules is
+				# unsupported and not recommended.
 				self.per_arena_data.printDetachBeginCode()
 				
 			for int in self.my_arena_interfaces:
@@ -1930,9 +1939,9 @@ class ACEDependency:
 		if not self.name:
 			if self.module.use_line_directives and self.file and self.line_number:
 				print '#line', self.line_number, '"' + self.file + '"'
-			print '\t\tad->' + self.pointer, '= mm->GetInterface(' + self.identifier + ', arena);'
+			print '\t\t_ad->' + self.pointer, '= mm->GetInterface(' + self.identifier + ', arena);'
 			if not failGracefully:
-				print '\t\tif (!ad->' + self.pointer + ')'
+				print '\t\tif (!_ad->' + self.pointer + ')'
 
 				print '\t\t{\n\t\t\tlm->LogA(L_ERROR, "' + self.module.name + '", arena, "error obtaining required interface', self.identifier, '"', self.identifier + ');'
 				print '\t\t\tfailedAttach = TRUE;'
@@ -1942,10 +1951,10 @@ class ACEDependency:
 		else:
 			if self.module.use_line_directives and self.file and self.line_number:
 				print '#line', self.line_number, '"' + self.file + '"'
-			print '\t\tad->' + self.pointer, '= mm->GetInterfaceByName("' + self.name + '");'
+			print '\t\t_ad->' + self.pointer, '= mm->GetInterfaceByName("' + self.name + '");'
 			
 			if not failGracefully:
-				print '\t\tif (!ad->' + self.pointer + ')'
+				print '\t\tif (!_ad->' + self.pointer + ')'
 
 				print '\t\t{\n\t\t\tlm->LogA(L_ERROR, "' + self.module.name + '", arena, "error obtaining required named interface', self.name, '");'
 				print '\t\t\tfailedAttach = TRUE;'
@@ -1956,7 +1965,7 @@ class ACEDependency:
 			if self.identifier:
 				if self.module.use_line_directives and self.file and self.line_number:
 					print '#line', self.line_number, '"' + self.file + '"'
-				print '\t\tif (strcmp(ad->' + self.pointer + '->head.iid,', self.identifier + '))\n\t\t{'
+				print '\t\tif (strcmp(_ad->' + self.pointer + '->head.iid,', self.identifier + '))\n\t\t{'
 
 				print '\t\t\tlm->LogA(L_ERROR, "' + self.module.name + '", arena, "named interface', self.name, 'expected interface-id "', self.identifier, '", got %s",', self.pointer + '->head.iid);'
 				print '\t\t\tfailedAttach = TRUE;'
@@ -1968,7 +1977,7 @@ class ACEDependency:
 		print '\t\tmm->ReleaseInterface(' + self.pointer + ');'
 		
 	def printDetachCode(self):
-		print '\t\tmm->ReleaseInterface(ad->' + self.pointer +');'
+		print '\t\tmm->ReleaseInterface(_ad->' + self.pointer +');'
 		
 
 class ACEFunction:
@@ -2104,30 +2113,30 @@ class ACEArenaData(ACEStructure):
 	
 	def printAttachCode(self):
 		if self.dynamic:
-			print '\t\t' + self.name + ' *ad = amalloc(sizeof(*ad));'
-			print '\t\twrapper_' + self.name + ' *wrapped_ad = P_ARENA_DATA(arena, arenaDataKey);'
-			print '\t\twrapped_ad->data = ad;'
+			print '\t\t' + self.name + ' *_ad = amalloc(sizeof(*_ad));'
+			print '\t\twrapper_' + self.name + ' *_wrapped_ad = P_ARENA_DATA(arena, arenaDataKey);'
+			print '\t\t_wrapped_ad->data = _ad;'
 		else:
-			print '\t\t' + self.name + ' *ad = P_ARENA_DATA(arena, arenaDataKey);'
+			print '\t\t' + self.name + ' *_ad = P_ARENA_DATA(arena, arenaDataKey);'
 		
 	def printDetachFinalCode(self):
 		if not self.dynamic:
 			return;
-		print '\t\twrapped_ad->data = NULL;'
-		print '\t\tafree(ad);'
+		print '\t\t_wrapped_ad->data = NULL;'
+		print '\t\tafree(_ad);'
 		
 	def getInvokeCode(self, var, arena, space):
 		if not self.dynamic:
 			return space + self.name + ' *' + var + ' = ' + arena + ' ? P_ARENA_DATA(' + arena + ', arenaDataKey) : NULL;'
 		else:
-			return space + 'wrapper_' + self.name + ' *wrapped_' + var + ' = ' + arena + ' ? P_ARENA_DATA(' + arena + ', arenaDataKey) : NULL;\n' + space + self.name + ' *' + var + ' = wrapped_' + var + ' ? wrapped_' + var + '->data : NULL;'
+			return space + 'wrapper_' + self.name + ' *_wrapped' + var + ' = ' + arena + ' ? P_ARENA_DATA(' + arena + ', arenaDataKey) : NULL;\n' + space + self.name + ' *' + var + ' = _wrapped' + var + ' ? _wrapped' + var + '->data : NULL;'
 
 	def printDetachBeginCode(self):
 		if not self.dynamic:
-			print '\t\t' + self.name + ' *' + 'ad = P_ARENA_DATA(arena, arenaDataKey);'
+			print '\t\t' + self.name + ' *_ad = P_ARENA_DATA(arena, arenaDataKey);'
 		else:
-			print '\t\twrapper_' + self.name + ' *wrapped_ad = P_ARENA_DATA(arena, arenaDataKey);'
-			print '\t\t' + self.name + ' *ad = wrapped_ad->data;\n'
+			print '\t\twrapper_' + self.name + ' *_wrapped_ad = P_ARENA_DATA(arena, arenaDataKey);'
+			print '\t\t' + self.name + ' *_ad = _wrapped_ad->data;\n'
 
 
 class ACEPlayerData(ACEStructure):
