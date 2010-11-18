@@ -1215,10 +1215,33 @@ class Processor:
 							if self.active_structure.name and self.active_structure.name != end_struct.group(1):
 								raise ProcessingException(self, 'struct name inconsistency, check to make sure the struct is named as you want it')
 							self.active_structure.name = end_struct.group(1)
-						self.module.structs.append(self.active_structure)
-						self.active_structure = False
+							
+						if not self.active_structure.name:
+							raise ProcessingException(self, 'structures must have a name specified')
+						
+						varname = None
+						if self.active_structure.parent_structure:
+							varname = self.active_structure.name
+							self.active_structure.name = 'struct_' + self.active_structure.parent_structure.name + '_' + self.active_structure.name
+
+						if self.active_structure.name:
+							self.module.structs.append(self.active_structure)
+							
+						if self.active_structure.parent_structure:
+							self.active_structure.parent_structure.pushItem(self.filename, self.current_line, self.active_structure.name + ' ' + varname)
+						self.active_structure = self.active_structure.parent_structure
 						continue
 
+				nested_struct_begin = ACEStructure.StructDeclareEx.match(line)
+				if nested_struct_begin:
+					new_structure = ACEStructure(self.module, nested_struct_begin.group(2))
+					new_structure.parent_structure = self.active_structure
+					self.active_structure = new_structure
+					if self.use_line_directives:
+						new_structure.line_number = self.current_line
+						new_structure.file = self.filename
+						continue
+				
 				itemSpecified = ACEStructure.StructFieldEx.match(line)
 				if itemSpecified:
 					self.active_structure.pushItem(self.filename, self.current_line, itemSpecified.group(1))
@@ -2051,19 +2074,22 @@ class ACEInterface:
 			
 class ACEStructure:
 	TypedefDeclareEx = re.compile(r'typedef\s*(.*)\s*;$')
-	StructDeclareEx = re.compile(r'(typedef)?\s*struct\s*(\w+)')
+	StructDeclareEx = re.compile(r'(typedef)?\s*struct\s*(\w+)?\s*({)?\s*$')
 	StructDeclareExtraEx = re.compile(r'^\s*{\s*$')
-	StructEndEx = re.compile(r'^}\s*(\w+)?;\s*$')
+	StructEndEx = re.compile(r'^\s*}\s*(\w+)?;\s*$')
 	StructFieldEx = re.compile(r'\s*(.+);')
 
 	def __init__(self, module, name, dynamic=False):
 		self.module = module
 		self.dynamic = dynamic
 		self.name = name
+		if not self.name:
+			self.name = ''
 		self.items = []
 		self.closeviaregex = True
 		self.line_number = None
 		self.file = None
+		self.parent_structure = None
 	
 	def pushItem(self, file, line, item):
 		self.items.append((file, line, item))
