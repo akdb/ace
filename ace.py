@@ -1962,7 +1962,7 @@ class ACEDependency:
 		if not self.name:
 			if self.module.use_line_directives and self.file and self.line_number:
 				print '#line', self.line_number, '"' + self.file + '"'
-			print '\t\t_ad->' + self.pointer, '= mm->GetInterface(' + self.identifier + ', arena);'
+			print '\t\t_ad->' + self.pointer, '= mm->GetArenaInterface(' + self.identifier + ', arena);'
 			if not failGracefully:
 				print '\t\tif (!_ad->' + self.pointer + ')'
 
@@ -2000,7 +2000,10 @@ class ACEDependency:
 		print '\t\tmm->ReleaseInterface(' + self.pointer + ');'
 		
 	def printDetachCode(self):
-		print '\t\tmm->ReleaseInterface(_ad->' + self.pointer +');'
+		if not self.name:
+			print '\t\tmm->ReleaseArenaInterface(_ad->' + self.pointer + ', arena);'
+		else:
+			print '\t\tmm->ReleaseInterface(_ad->' + self.pointer + ');'
 		
 
 class ACEFunction:
