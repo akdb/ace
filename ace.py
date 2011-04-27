@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 # ACE - ASSS C Enricher - Generates full modules from pattern specifications for "a small subspace server"
-# version beta 1
-# Copyright (C) 2010 Justin M. Schwartz ("Arnk Kilo Dylie")
+# version beta 2
+# Copyright (C) 2010-2011 Justin M. Schwartz ("Arnk Kilo Dylie")
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
