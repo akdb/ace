@@ -2178,7 +2178,11 @@ class ACEPlayerData(ACEStructure):
 		ACEStructure.printDeclareCode(self)
 
 	def printLoadCode(self):
-		print '\t\t' + 'playerDataKey = pd->AllocatePlayerData(sizeof(' + self.name + '));'
+                if not self.dynamic:
+                        print '\t\t' + 'playerDataKey = pd->AllocatePlayerData(sizeof(' + self.name + '));'
+                else:
+                        print '\t\t' + 'playerDataKey = pd->AllocatePlayerData(sizeof(wrapper_' + self.name + '));'
+
 		print '\t\tif (' + 'playerDataKey == -1)\n\t\t{'
 		print '\t\t\tlm->Log(L_ERROR, "<' + self.module.name + '> unable to register player-data");'
 		print '\t\t\tfailedLoad = TRUE;'
